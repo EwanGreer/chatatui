@@ -25,6 +25,14 @@ const (
 	focusCreateRoom
 )
 
+type connState int
+
+const (
+	connStateDisconnected connState = iota
+	connStateConnecting
+	connStateConnected
+)
+
 type Room struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
@@ -50,6 +58,8 @@ type Model struct {
 	err             error
 	conn            *websocket.Conn
 	connectedTo     string
+	state           connState
+	reconnectDelay  time.Duration
 }
 
 type (
@@ -61,6 +71,7 @@ type (
 	}
 	roomCreatedMsg Room
 	tickMsg        time.Time
+	reconnectMsg   string
 )
 type incomingMsg string
 
@@ -97,6 +108,7 @@ func NewModel(cfg Config) *Model {
 		rooms:           []Room{},
 		messages:        []string{},
 		focus:           focusInput,
+		reconnectDelay:  time.Second,
 	}
 }
 
@@ -256,6 +268,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case connectedMsg:
 		m.conn = msg.conn
 		m.connectedTo = msg.roomID
+		m.state = connStateConnected
+		m.reconnectDelay = time.Second
 		m.err = nil
 		m.messages = []string{}
 		m.updateViewportContent()
@@ -267,7 +281,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.viewport.GotoBottom()
 		return m, m.listenForMessages()
 
+	case reconnectMsg:
+		return m, m.connectToRoom(string(msg))
+
 	case errMsg:
+		if m.connectedTo != "" {
+			delay := m.reconnectDelay
+			m.reconnectDelay = min(delay*2, 30*time.Second)
+			m.state = connStateConnecting
+			m.err = nil
+			return m, tea.Tick(delay, func(t time.Time) tea.Msg {
+				return reconnectMsg(m.connectedTo)
+			})
+		}
 		m.err = msg
 		return m, nil
 
@@ -479,6 +505,11 @@ func (m Model) renderSidebar() string {
 		roomList = "(no rooms)"
 	}
 
+	if m.state == connStateConnecting && m.connectedTo != "" {
+		warnStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("220"))
+		roomList += warnStyle.Render("\nReconnecting...")
+	}
+
 	content := header + "\n\n" + roomList
 
 	return style.Render(content)
@@ -498,7 +529,17 @@ func (m Model) renderMain() string {
 			}
 		}
 	}
-	header := headerStyle.Render(title)
+
+	var stateIndicator string
+	switch m.state {
+	case connStateConnected:
+		stateIndicator = lipgloss.NewStyle().Foreground(lipgloss.Color("40")).Render(" ●")
+	case connStateConnecting:
+		stateIndicator = lipgloss.NewStyle().Foreground(lipgloss.Color("220")).Render(" ●")
+	case connStateDisconnected:
+		stateIndicator = lipgloss.NewStyle().Foreground(lipgloss.Color("196")).Render(" ●")
+	}
+	header := headerStyle.Render(title + stateIndicator)
 
 	viewportStyle := lipgloss.NewStyle()
 	if m.focus == focusMessages {
