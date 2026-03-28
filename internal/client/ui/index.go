@@ -64,6 +64,23 @@ type (
 )
 type incomingMsg string
 
+type wireMessage struct {
+	Type      string    `json:"type"`
+	ID        string    `json:"id"`
+	Author    string    `json:"author"`
+	Content   string    `json:"content"`
+	Timestamp time.Time `json:"timestamp"`
+}
+
+func formatWireMessage(data []byte) string {
+	var wire wireMessage
+	if err := json.Unmarshal(data, &wire); err != nil {
+		return string(data)
+	}
+	ts := wire.Timestamp.Local().Format("15:04")
+	return fmt.Sprintf("%s %s: %s", ts, wire.Author, wire.Content)
+}
+
 func NewModel(cfg Config) *Model {
 	ti := textinput.New()
 	ti.Placeholder = "Type a message..."
@@ -193,7 +210,7 @@ func (m *Model) listenForMessages() tea.Cmd {
 			return errMsg(err)
 		}
 
-		return incomingMsg(string(data))
+		return incomingMsg(formatWireMessage(data))
 	}
 }
 
@@ -310,7 +327,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if err != nil {
 					m.err = err
 				} else {
-					m.messages = append(m.messages, "You: "+msg)
+					m.messages = append(m.messages, fmt.Sprintf("%s You: %s", time.Now().Local().Format("15:04"), msg))
 					m.updateViewportContent()
 					m.viewport.GotoBottom()
 				}

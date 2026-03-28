@@ -60,15 +60,12 @@ func (r *Room) Broadcast(msg []byte, sender *Client) {
 	r.mu.RLock()
 	poolEnabled := r.broadcastPool != nil
 
-	// TODO: server should probably be sending JSON and clients should handle formatting
-	formatted := FormatMessageWithAuthor(msg, sender.Username)
-
 	if !poolEnabled {
 		for client := range r.clients {
 			if client == sender {
 				continue
 			}
-			client.SendRaw(formatted)
+			client.SendRaw(msg)
 		}
 		r.mu.RUnlock()
 		return
@@ -84,7 +81,7 @@ func (r *Room) Broadcast(msg []byte, sender *Client) {
 
 	// Submit to worker pool (non-blocking)
 	job := &broadcastJob{
-		message: formatted,
+		message: msg,
 		clients: clientSnapshot,
 	}
 	r.broadcastPool.Submit(job)

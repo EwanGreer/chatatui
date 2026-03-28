@@ -96,7 +96,18 @@ func (h *WSHandler) sendHistory(client *hub.Client, roomID uint) {
 
 	// Send messages in chronological order (oldest first)
 	for i := len(messages) - 1; i >= 0; i-- {
-		formatted := hub.FormatMessageWithAuthor(messages[i].Content, messages[i].Sender.Name)
-		client.SendRaw(formatted)
+		wire := &hub.WireMessage{
+			Type:      hub.MessageTypeChat,
+			ID:        messages[i].UUID.String(),
+			Author:    messages[i].Sender.Name,
+			Content:   string(messages[i].Content),
+			Timestamp: messages[i].CreatedAt,
+		}
+		wireBytes, err := wire.Marshal()
+		if err != nil {
+			log.Println("failed to marshal history message:", err)
+			continue
+		}
+		client.SendRaw(wireBytes)
 	}
 }

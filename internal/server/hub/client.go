@@ -3,6 +3,7 @@ package hub
 import (
 	"context"
 	"log"
+	"time"
 
 	"github.com/coder/websocket"
 	"github.com/egreerdp/chatatui/internal/repository"
@@ -54,7 +55,25 @@ func (c *Client) readPump(ctx context.Context, room *Room, msgRepo *repository.M
 			log.Println("failed to persist message:", err)
 		}
 
-		room.Broadcast(data, c)
+		wire := &WireMessage{
+			Type:    MessageTypeChat,
+			ID:      msg.UUID.String(),
+			Author:  c.Username,
+			Content: string(data),
+		}
+		if msg.CreatedAt.IsZero() {
+			wire.Timestamp = time.Now()
+		} else {
+			wire.Timestamp = msg.CreatedAt
+		}
+
+		wireBytes, err := wire.Marshal()
+		if err != nil {
+			log.Println("failed to marshal message:", err)
+			continue
+		}
+
+		room.Broadcast(wireBytes, c)
 	}
 }
 
@@ -78,8 +97,8 @@ func (c *Client) writePump(ctx context.Context) {
 
 func (c *Client) Send(msg []byte) {
 	select {
-	case c.send <- c.FormatMessageText(msg):
-		log.Println(string(c.FormatMessageText(msg)))
+	case c.send <- msg:
+		log.Println(string(msg))
 	default:
 	}
 }
@@ -89,12 +108,4 @@ func (c *Client) SendRaw(msg []byte) {
 	case c.send <- msg:
 	default:
 	}
-}
-
-func (c *Client) FormatMessageText(msg []byte) []byte {
-	return FormatMessageWithAuthor(msg, c.Username)
-}
-
-func FormatMessageWithAuthor(msg []byte, author string) []byte {
-	return []byte(author + ": " + string(msg))
 }
