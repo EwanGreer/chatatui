@@ -326,6 +326,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "ctrl+c":
 			return m, tea.Quit
+		case "q":
+			if m.focus != focusInput && m.focus != focusCreateRoom {
+				return m, tea.Quit
+			}
+		case "tab", "shift+tab":
+			if m.focus != focusCreateRoom {
+				if m.focus == focusRooms {
+					m.setFocus(focusInput)
+				} else {
+					m.setFocus(focusRooms)
+				}
+				return m, nil
+			}
 		case "r":
 			if m.focus == focusRooms {
 				return m, m.fetchRooms
@@ -422,7 +435,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		headerHeight := 1
 		inputHeight := 3
-		viewportHeight := innerHeight - headerHeight - inputHeight - 1 // -1 for typing indicator
+		viewportHeight := innerHeight - headerHeight - inputHeight - 1 - 2 // -1 typing indicator, -2 viewport border
 
 		if !m.ready {
 			m.viewport = viewport.New(mainWidth, viewportHeight)
@@ -576,7 +589,9 @@ func (m Model) renderMain() string {
 	}
 	header := headerStyle.Render(title + stateIndicator)
 
-	viewportStyle := lipgloss.NewStyle()
+	viewportStyle := lipgloss.NewStyle().
+		BorderStyle(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("240"))
 	if m.focus == focusMessages {
 		viewportStyle = viewportStyle.BorderForeground(lipgloss.Color("62"))
 	}
@@ -673,12 +688,12 @@ func (m Model) renderHelp() string {
 	descStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
 
 	keys := []struct{ key, desc string }{
-		{"←/→/esc", "switch panel"},
+		{"tab/←/→", "switch panel"},
 		{"j/k", "navigate"},
 		{"n", "new room"},
 		{"r", "refresh"},
 		{"enter", "join/send"},
-		{"ctrl+c", "quit"},
+		{"q/ctrl+c", "quit"},
 	}
 
 	var items []string
