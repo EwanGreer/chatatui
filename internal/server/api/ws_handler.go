@@ -8,7 +8,7 @@ import (
 
 	"github.com/coder/websocket"
 	"github.com/egreerdp/chatatui/internal/middleware"
-	"github.com/egreerdp/chatatui/internal/repository"
+	"github.com/egreerdp/chatatui/internal/service"
 	"github.com/egreerdp/chatatui/internal/server/hub"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -17,11 +17,11 @@ import (
 
 type WSHandler struct {
 	hub                 *hub.Hub
-	db                  *repository.PostgresDB
+	svc                 service.ChatService
 	messageHistoryLimit int
 }
 
-func NewWSHandler(h *hub.Hub, db *repository.PostgresDB, messageHistoryLimit int) *WSHandler {
+func NewWSHandler(h *hub.Hub, svc service.ChatService, messageHistoryLimit int) *WSHandler {
 	go func() {
 		for {
 			time.Sleep(time.Second * 5)
@@ -31,7 +31,7 @@ func NewWSHandler(h *hub.Hub, db *repository.PostgresDB, messageHistoryLimit int
 
 	return &WSHandler{
 		hub:                 h,
-		db:                  db,
+		svc:                 svc,
 		messageHistoryLimit: messageHistoryLimit,
 	}
 }
@@ -49,7 +49,7 @@ func (h *WSHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dbRoom, err := h.db.Rooms().GetByID(roomUUID)
+	roomInfo, err := h.svc.GetRoom(roomUUID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			writeError(w, http.StatusNotFound, "ROOM_NOT_FOUND", "room not found")
@@ -73,21 +73,21 @@ func (h *WSHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user := middleware.UserFromContext(r.Context())
-	if err := h.db.Rooms().AddMember(dbRoom.ID, user.ID); err != nil {
-		slog.Error("failed to add room member", "error", err, "room_id", dbRoom.ID, "user_id", user.ID)
+	if err := h.svc.AddRoomMember(roomInfo.ID, user.ID); err != nil {
+		slog.Error("failed to add room member", "error", err, "room_id", roomInfo.ID, "user_id", user.ID)
 	}
 
 	client := hub.NewClient(conn, user.ID, roomUUID, user.Name)
 	room.Add(client)
 	defer room.Remove(client)
 
-	h.sendHistory(client, dbRoom.ID)
+	h.sendHistory(client, roomInfo.ID)
 
-	client.Run(room, h.db.Messages())
+	client.Run(room, h.svc)
 }
 
 func (h *WSHandler) sendHistory(client *hub.Client, roomID uuid.UUID) {
-	messages, err := h.db.Messages().GetByRoom(roomID, h.messageHistoryLimit, 0)
+	messages, err := h.svc.GetMessageHistory(roomID, h.messageHistoryLimit, 0)
 	if err != nil {
 		slog.Error("failed to get message history", "error", err, "room_id", roomID)
 		return
@@ -98,8 +98,8 @@ func (h *WSHandler) sendHistory(client *hub.Client, roomID uuid.UUID) {
 		wire := &hub.WireMessage{
 			Type:      hub.MessageTypeChat,
 			ID:        messages[i].ID.String(),
-			Author:    messages[i].Sender.Name,
-			Content:   string(messages[i].Content),
+			Author:    messages[i].Author,
+			Content:   messages[i].Content,
 			Timestamp: messages[i].CreatedAt,
 		}
 		wireBytes, err := wire.Marshal()

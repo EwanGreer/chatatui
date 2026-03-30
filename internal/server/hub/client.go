@@ -7,9 +7,14 @@ import (
 	"time"
 
 	"github.com/coder/websocket"
-	"github.com/egreerdp/chatatui/internal/repository"
 	"github.com/google/uuid"
 )
+
+// MessagePersister abstracts message persistence so the hub package
+// does not depend on the repository layer.
+type MessagePersister interface {
+	PersistMessage(content []byte, senderID, roomID uuid.UUID) (id uuid.UUID, createdAt time.Time, err error)
+}
 
 type Client struct {
 	conn     *websocket.Conn
@@ -29,15 +34,15 @@ func NewClient(conn *websocket.Conn, userID, roomID uuid.UUID, username string) 
 	}
 }
 
-func (c *Client) Run(room *Room, msgRepo *repository.MessageRepository) {
+func (c *Client) Run(room *Room, persister MessagePersister) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	go c.writePump(ctx)
-	c.readPump(ctx, room, msgRepo) // blocking
+	c.readPump(ctx, room, persister) // blocking
 }
 
-func (c *Client) readPump(ctx context.Context, room *Room, msgRepo *repository.MessageRepository) {
+func (c *Client) readPump(ctx context.Context, room *Room, persister MessagePersister) {
 	defer func() { _ = c.conn.CloseNow() }()
 
 	for {
@@ -62,25 +67,21 @@ func (c *Client) readPump(ctx context.Context, room *Room, msgRepo *repository.M
 			continue
 		}
 
-		msg := &repository.Message{
-			Content:  data,
-			SenderID: c.UserID,
-			RoomID:   c.RoomID,
-		}
-		if err := msgRepo.Create(msg); err != nil {
+		msgID, createdAt, err := persister.PersistMessage(data, c.UserID, c.RoomID)
+		if err != nil {
 			slog.Error("failed to persist message", "error", err, "room_id", c.RoomID, "user_id", c.UserID)
 		}
 
 		wire := &WireMessage{
 			Type:    MessageTypeChat,
-			ID:      msg.ID.String(),
+			ID:      msgID.String(),
 			Author:  c.Username,
 			Content: string(data),
 		}
-		if msg.CreatedAt.IsZero() {
+		if createdAt.IsZero() {
 			wire.Timestamp = time.Now()
 		} else {
-			wire.Timestamp = msg.CreatedAt
+			wire.Timestamp = createdAt
 		}
 
 		wireBytes, err := wire.Marshal()
