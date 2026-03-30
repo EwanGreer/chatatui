@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"log"
 	"net/http"
 	"os"
@@ -12,6 +13,7 @@ import (
 	"github.com/egreerdp/chatatui/internal/server/hub"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type WSHandler struct {
@@ -53,9 +55,12 @@ func (h *WSHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: we should not be creating here. We should have a seperate endpoint for that.
 	dbRoom, err := h.db.Rooms().GetByID(roomUUID)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			http.Error(w, "room not found", http.StatusNotFound)
+			return
+		}
 		http.Error(w, "failed to get room", http.StatusInternalServerError)
 		return
 	}
