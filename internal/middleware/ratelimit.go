@@ -15,8 +15,14 @@ type rateLimitEntry struct{}
 func (r rateLimitEntry) CacheKey() string    { return "" }
 func (r rateLimitEntry) CachePrefix() string { return "ratelimit:user" }
 
+// RateLimitCache is the subset of cache.RedisCache used by RateLimiter.
+type RateLimitCache interface {
+	Incr(ctx context.Context, key string) (int64, error)
+	Expire(ctx context.Context, key string, ttl time.Duration) (bool, error)
+}
+
 type RateLimiter struct {
-	cache      cache.RedisCache[rateLimitEntry]
+	cache      RateLimitCache
 	maxReqs    int64
 	windowSecs int
 }

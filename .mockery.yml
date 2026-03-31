@@ -17,6 +17,9 @@ packages:
     interfaces:
       RoomStore:
       MessageStore:
+  github.com/egreerdp/chatatui/internal/middleware:
+    interfaces:
+      RateLimitCache:
   github.com/egreerdp/chatatui/internal/server/api:
     interfaces:
       ChatService:
