@@ -21,38 +21,38 @@ type ChatService interface {
 }
 
 type Handler struct {
-	Router      chi.Router
-	Hub         *hub.Hub
-	DB          *repository.PostgresDB
-	ChatService ChatService
-	Config      config.ServerConfig
-	RateLimiter *middleware.RateLimiter
+	Router          chi.Router
+	Hub             *hub.Hub
+	DB              *repository.PostgresDB
+	ChatService     ChatService
+	Config          config.ServerConfig
+	RateLimiter     *middleware.RateLimiter
+	wsHandler       *WSHandler
+	registerHandler *RegisterHandler
+	roomsHandler    *RoomsHandler
 }
 
-func NewHandler(hub *hub.Hub, db *repository.PostgresDB, cfg config.ServerConfig, rl *middleware.RateLimiter) *Handler {
+func NewHandler(h *hub.Hub, db *repository.PostgresDB, svc ChatService, cfg config.ServerConfig, rl *middleware.RateLimiter) *Handler {
 	r := chi.NewRouter()
 	r.Use(chimw.Logger)
 	r.Use(chimw.Recoverer)
 	r.Use(chimw.Heartbeat("/up"))
 
-	svc := service.NewChatService(db.Rooms(), db.Messages())
-
 	return &Handler{
-		Router:      r,
-		Hub:         hub,
-		DB:          db,
-		ChatService: svc,
-		Config:      cfg,
-		RateLimiter: rl,
+		Router:          r,
+		Hub:             h,
+		DB:              db,
+		ChatService:     svc,
+		Config:          cfg,
+		RateLimiter:     rl,
+		wsHandler:       NewWSHandler(h, svc, cfg.MessageHistoryLimit),
+		registerHandler: NewRegisterHandler(db),
+		roomsHandler:    NewRoomsHandler(db, cfg.RoomListLimit),
 	}
 }
 
 func (h *Handler) Routes() chi.Router {
-	ws := NewWSHandler(h.Hub, h.ChatService, h.Config.MessageHistoryLimit)
-	register := NewRegisterHandler(h.DB)
-	rooms := NewRoomsHandler(h.DB, h.Config.RoomListLimit)
-
-	h.Router.Post("/register", register.Handle)
+	h.Router.Post("/register", h.registerHandler.Handle)
 
 	h.Router.Group(func(r chi.Router) {
 		r.Use(
@@ -60,9 +60,9 @@ func (h *Handler) Routes() chi.Router {
 			h.RateLimiter.Middleware,
 		)
 
-		r.Get("/rooms", rooms.List)
-		r.Post("/rooms", rooms.Create)
-		r.Get("/ws/{roomID}", ws.Handle)
+		r.Get("/rooms", h.roomsHandler.List)
+		r.Post("/rooms", h.roomsHandler.Create)
+		r.Get("/ws/{roomID}", h.wsHandler.Handle)
 	})
 
 	return h.Router

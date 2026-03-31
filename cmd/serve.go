@@ -16,6 +16,7 @@ import (
 	"github.com/egreerdp/chatatui/internal/server"
 	"github.com/egreerdp/chatatui/internal/server/api"
 	"github.com/egreerdp/chatatui/internal/server/hub"
+	"github.com/egreerdp/chatatui/internal/service"
 	"github.com/spf13/cobra"
 )
 
@@ -44,7 +45,8 @@ var serveCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		handler := api.NewHandler(hub.NewHub(), database, cfg, rateLimiter)
+		svc := service.NewChatService(database.Rooms(), database.Messages())
+		handler := api.NewHandler(hub.NewHub(), database, svc, cfg, rateLimiter)
 		srv := server.NewChatServer(handler, cfg.Addr, database)
 
 		go func() {

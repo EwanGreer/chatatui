@@ -8,11 +8,11 @@ import (
 )
 
 type ChatService struct {
-	rooms    *repository.RoomRepository
-	messages *repository.MessageRepository
+	rooms    RoomStore
+	messages MessageStore
 }
 
-func NewChatService(rooms *repository.RoomRepository, messages *repository.MessageRepository) *ChatService {
+func NewChatService(rooms RoomStore, messages MessageStore) *ChatService {
 	return &ChatService{rooms: rooms, messages: messages}
 }
 
