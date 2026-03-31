@@ -1,6 +1,6 @@
 module github.com/EwanGreer/chatatui
 
-go 1.25.5
+go 1.25
 
 require (
 	github.com/EwanGreer/cache v0.8.0
