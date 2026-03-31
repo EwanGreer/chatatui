@@ -50,10 +50,9 @@ rate_limit_window_secs = 60
 
 		fmt.Printf("config file created: %s\n", path)
 		fmt.Println("Next steps:")
-		fmt.Println("  1. Start the server:  chatatui serve")
-		fmt.Println("  2. Register a user:   curl -s -X POST http://localhost:8080/register -H 'Content-Type: application/json' -d '{\"name\":\"yourname\"}' | jq .")
-		fmt.Println("  3. Set api_key in the config file")
-		fmt.Println("  4. Start the client:  chatatui")
+		fmt.Println("  1. Set host in the config file to point at the server")
+		fmt.Println("  2. Register:          chatatui register <name>")
+		fmt.Println("  3. Start the client:  chatatui")
 	},
 }
 

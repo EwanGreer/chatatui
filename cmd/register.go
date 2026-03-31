@@ -20,9 +20,14 @@ var registerCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		name := args[0]
 
+		if viper.ConfigFileUsed() == "" {
+			fmt.Fprintln(os.Stderr, "error: no config file found — run 'chatatui init' first")
+			os.Exit(1)
+		}
+
 		host := viper.GetString("host")
 		if host == "" {
-			fmt.Fprintln(os.Stderr, "error: 'host' not set — run 'chatatui init' first")
+			fmt.Fprintln(os.Stderr, "error: 'host' not set in config — run 'chatatui init' first")
 			os.Exit(1)
 		}
 
