@@ -3,11 +3,11 @@ package api
 import (
 	"time"
 
-	"github.com/egreerdp/chatatui/internal/config"
-	"github.com/egreerdp/chatatui/internal/middleware"
-	"github.com/egreerdp/chatatui/internal/repository"
-	"github.com/egreerdp/chatatui/internal/server/hub"
-	"github.com/egreerdp/chatatui/internal/service"
+	"github.com/EwanGreer/chatatui/internal/config"
+	"github.com/EwanGreer/chatatui/internal/middleware"
+	"github.com/EwanGreer/chatatui/internal/repository"
+	"github.com/EwanGreer/chatatui/internal/server/hub"
+	"github.com/EwanGreer/chatatui/internal/service"
 	"github.com/go-chi/chi/v5"
 	chimw "github.com/go-chi/chi/v5/middleware"
 	"github.com/google/uuid"

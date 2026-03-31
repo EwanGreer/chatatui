@@ -10,13 +10,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/egreerdp/chatatui/internal/config"
-	"github.com/egreerdp/chatatui/internal/middleware"
-	"github.com/egreerdp/chatatui/internal/repository"
-	"github.com/egreerdp/chatatui/internal/server"
-	"github.com/egreerdp/chatatui/internal/server/api"
-	"github.com/egreerdp/chatatui/internal/server/hub"
-	"github.com/egreerdp/chatatui/internal/service"
+	"github.com/EwanGreer/chatatui/internal/config"
+	"github.com/EwanGreer/chatatui/internal/middleware"
+	"github.com/EwanGreer/chatatui/internal/repository"
+	"github.com/EwanGreer/chatatui/internal/server"
+	"github.com/EwanGreer/chatatui/internal/server/api"
+	"github.com/EwanGreer/chatatui/internal/server/hub"
+	"github.com/EwanGreer/chatatui/internal/service"
 	"github.com/spf13/cobra"
 )
 

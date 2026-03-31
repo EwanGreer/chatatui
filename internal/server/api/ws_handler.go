@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/coder/websocket"
-	"github.com/egreerdp/chatatui/internal/middleware"
-	"github.com/egreerdp/chatatui/internal/server/hub"
+	"github.com/EwanGreer/chatatui/internal/middleware"
+	"github.com/EwanGreer/chatatui/internal/server/hub"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"gorm.io/gorm"

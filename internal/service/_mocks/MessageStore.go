@@ -5,7 +5,7 @@
 package mocks
 
 import (
-	"github.com/egreerdp/chatatui/internal/repository"
+	"github.com/EwanGreer/chatatui/internal/repository"
 	"github.com/google/uuid"
 	mock "github.com/stretchr/testify/mock"
 )

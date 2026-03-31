@@ -3,7 +3,7 @@ package service
 import (
 	"time"
 
-	"github.com/egreerdp/chatatui/internal/repository"
+	"github.com/EwanGreer/chatatui/internal/repository"
 	"github.com/google/uuid"
 )
 

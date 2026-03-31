@@ -1,4 +1,4 @@
-module github.com/egreerdp/chatatui
+module github.com/EwanGreer/chatatui
 
 go 1.25.5
 

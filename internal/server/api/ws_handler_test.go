@@ -7,8 +7,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	mocks "github.com/egreerdp/chatatui/internal/server/api/_mocks"
-	"github.com/egreerdp/chatatui/internal/server/hub"
+	mocks "github.com/EwanGreer/chatatui/internal/server/api/_mocks"
+	"github.com/EwanGreer/chatatui/internal/server/hub"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"

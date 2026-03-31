@@ -7,7 +7,7 @@ package mocks
 import (
 	"time"
 
-	"github.com/egreerdp/chatatui/internal/service"
+	"github.com/EwanGreer/chatatui/internal/service"
 	"github.com/google/uuid"
 	mock "github.com/stretchr/testify/mock"
 )

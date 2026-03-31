@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/egreerdp/chatatui/internal/repository"
-	mocks "github.com/egreerdp/chatatui/internal/service/_mocks"
+	"github.com/EwanGreer/chatatui/internal/repository"
+	mocks "github.com/EwanGreer/chatatui/internal/service/_mocks"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"

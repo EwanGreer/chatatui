@@ -8,7 +8,7 @@ import (
 	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/egreerdp/chatatui/internal/client/ui"
+	"github.com/EwanGreer/chatatui/internal/client/ui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )

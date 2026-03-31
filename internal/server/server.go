@@ -4,8 +4,8 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/egreerdp/chatatui/internal/repository"
-	"github.com/egreerdp/chatatui/internal/server/api"
+	"github.com/EwanGreer/chatatui/internal/repository"
+	"github.com/EwanGreer/chatatui/internal/server/api"
 )
 
 type ChatServer struct {
