@@ -29,7 +29,7 @@ var initCmd = &cobra.Command{
 		const defaultConfig = `# chatatui configuration
 
 # Client settings
-host    = "localhost:8080"
+host    = "https://a7d6-81-105-125-87.ngrok-free.app"
 api_key = ""
 
 # Server settings
