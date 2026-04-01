@@ -15,34 +15,36 @@ import (
 )
 
 func (m Model) Init() tea.Cmd {
-	return tea.Batch(textinput.Blink, m.fetchRooms, m.tickCmd())
+	return tea.Batch(textinput.Blink, m.fetchRooms(), m.tickCmd())
 }
 
-func (m Model) fetchRooms() tea.Msg {
-	url := m.config.httpURL("/rooms")
+func (m Model) fetchRooms() tea.Cmd {
+	return func() tea.Msg {
+		url := m.config.httpURL("/rooms")
 
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return errMsg(err)
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			return errMsg(err)
+		}
+		req.Header.Set("Authorization", m.config.APIKey)
+
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return errMsg(err)
+		}
+		defer func() { _ = resp.Body.Close() }()
+
+		if resp.StatusCode != http.StatusOK {
+			return errMsg(fmt.Errorf("server returned %d", resp.StatusCode))
+		}
+
+		var rooms []Room
+		if err := json.NewDecoder(resp.Body).Decode(&rooms); err != nil {
+			return errMsg(err)
+		}
+
+		return roomsMsg(rooms)
 	}
-	req.Header.Set("Authorization", m.config.APIKey)
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return errMsg(err)
-	}
-	defer func() { _ = resp.Body.Close() }()
-
-	if resp.StatusCode != http.StatusOK {
-		return errMsg(fmt.Errorf("server returned %d", resp.StatusCode))
-	}
-
-	var rooms []Room
-	if err := json.NewDecoder(resp.Body).Decode(&rooms); err != nil {
-		return errMsg(err)
-	}
-
-	return roomsMsg(rooms)
 }
 
 func (m Model) createRoom(name string) tea.Cmd {
@@ -147,6 +149,15 @@ func (m *Model) shouldSendTyping() bool {
 		return false
 	}
 	return m.input.Value() != ""
+}
+
+func sendMessageCmd(conn *websocket.Conn, text string) tea.Cmd {
+	return func() tea.Msg {
+		if err := conn.Write(context.Background(), websocket.MessageText, []byte(text)); err != nil {
+			return errMsg(err)
+		}
+		return nil
+	}
 }
 
 func sendTypingCmd(conn *websocket.Conn) tea.Cmd {

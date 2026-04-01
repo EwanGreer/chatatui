@@ -1,14 +1,12 @@
 package ui
 
 import (
-	"context"
 	"fmt"
 	"sort"
 	"time"
 
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/coder/websocket"
 )
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -22,7 +20,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				delete(m.typingUsers, user)
 			}
 		}
-		return m, tea.Batch(m.fetchRooms, m.tickCmd())
+		return m, tea.Batch(m.fetchRooms(), m.tickCmd())
 
 	case roomsMsg:
 		// Preserve current room index if possible
@@ -128,7 +126,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case "r":
 			if m.focus == focusRooms {
-				return m, m.fetchRooms
+				return m, m.fetchRooms()
 			}
 		case "n":
 			if m.focus == focusRooms {
@@ -172,16 +170,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, m.connectToRoom(roomID)
 			}
 			if m.focus == focusInput && m.input.Value() != "" && m.conn != nil {
-				msg := m.input.Value()
+				text := m.input.Value()
 				m.input.Reset()
-				err := m.conn.Write(context.Background(), websocket.MessageText, []byte(msg))
-				if err != nil {
-					m.err = err
-				} else {
-					m.messages = append(m.messages, fmt.Sprintf("%s You: %s", time.Now().Local().Format("15:04"), msg))
-					m.updateViewportContent()
-					m.viewport.GotoBottom()
-				}
+				m.messages = append(m.messages, fmt.Sprintf("%s You: %s", time.Now().Local().Format("15:04"), text))
+				m.updateViewportContent()
+				m.viewport.GotoBottom()
+				return m, sendMessageCmd(m.conn, text)
 			}
 		case "up", "k":
 			if m.focus == focusRooms {
@@ -211,15 +205,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.height = msg.Height
 
 		// Account for outer border and help bar
-		innerWidth := m.width - 4
-		innerHeight := m.height - 4 - 1
+		innerWidth := m.width - layoutOuterChrome
+		innerHeight := m.height - layoutOuterChrome - layoutHelpBarHeight
 
-		sidebarWidth := m.sidebarWidth()
-		mainWidth := innerWidth - sidebarWidth - 1
-
-		headerHeight := 1
-		inputHeight := 3
-		viewportHeight := innerHeight - headerHeight - inputHeight - 1 - 2 // -1 typing indicator, -2 viewport border
+		mainWidth := innerWidth - layoutSidebarWidth - layoutSidebarDivider
+		viewportHeight := innerHeight - layoutHeaderHeight - layoutInputHeight - layoutTypingLine - layoutViewportBorder
 
 		if !m.ready {
 			m.viewport = viewport.New(mainWidth, viewportHeight)
@@ -230,7 +220,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.viewport.Height = viewportHeight
 		}
 
-		m.input.Width = mainWidth - 2
+		m.input.Width = mainWidth - layoutInputPadding
 	}
 
 	if m.focus == focusInput {

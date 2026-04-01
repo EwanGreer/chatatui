@@ -1,16 +1,12 @@
 package ui
 
 import (
-	"encoding/json"
-	"fmt"
 	"strings"
 	"time"
 
 	"github.com/EwanGreer/chatatui/internal/limits"
-	"github.com/EwanGreer/chatatui/internal/server/hub"
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/coder/websocket"
 )
 
@@ -131,20 +127,4 @@ func (c Config) wsURL(path string) string {
 		base = "ws://" + base
 	}
 	return base + path
-}
-
-func formatWireMessage(data []byte) string {
-	var wire wireMessage
-	if err := json.Unmarshal(data, &wire); err != nil {
-		return string(data)
-	}
-
-	ts := wire.Timestamp.Local().Format("15:04")
-
-	if wire.Type == hub.MessageTypeError.String() {
-		return lipgloss.NewStyle().Foreground(lipgloss.Color("196")).Italic(true).
-			Render(fmt.Sprintf("%s ! %s", ts, wire.Content))
-	}
-
-	return fmt.Sprintf("%s %s: %s", ts, wire.Author, wire.Content)
 }
