@@ -3,9 +3,11 @@ package hub
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"time"
 
+	"github.com/EwanGreer/chatatui/internal/limits"
 	"github.com/coder/websocket"
 	"github.com/google/uuid"
 )
@@ -49,6 +51,18 @@ func (c *Client) readPump(ctx context.Context, room *Room, persister MessagePers
 		_, data, err := c.conn.Read(ctx)
 		if err != nil {
 			return
+		}
+
+		if len(data) > limits.MaxMessageLength {
+			errWire := &WireMessage{
+				Type:      MessageTypeError,
+				Content:   fmt.Sprintf("message too long (max %d characters)", limits.MaxMessageLength),
+				Timestamp: time.Now(),
+			}
+			if errBytes, err := errWire.Marshal(); err == nil {
+				c.Send(errBytes)
+			}
+			continue
 		}
 
 		var peek WireMessage

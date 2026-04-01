@@ -11,7 +11,12 @@ const (
 	MessageTypeChat   MessageType = "chat"
 	MessageTypeSystem MessageType = "system"
 	MessageTypeTyping MessageType = "typing"
+	MessageTypeError  MessageType = "error"
 )
+
+func (m MessageType) String() string {
+	return string(m)
+}
 
 type WireMessage struct {
 	Type      MessageType `json:"type"`

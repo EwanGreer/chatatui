@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/EwanGreer/chatatui/internal/limits"
+	"github.com/EwanGreer/chatatui/internal/server/hub"
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
@@ -97,10 +99,12 @@ type (
 	tickMsg        time.Time
 	reconnectMsg   string
 )
+
 type incomingMsg struct {
 	formatted string
 	author    string
 }
+
 type typingMsg string // username of the person who is typing
 
 type wireMessage struct {
@@ -116,17 +120,26 @@ func formatWireMessage(data []byte) string {
 	if err := json.Unmarshal(data, &wire); err != nil {
 		return string(data)
 	}
+
 	ts := wire.Timestamp.Local().Format("15:04")
+
+	if wire.Type == hub.MessageTypeError.String() {
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("196")).Italic(true).
+			Render(fmt.Sprintf("%s ! %s", ts, wire.Content))
+	}
+
 	return fmt.Sprintf("%s %s: %s", ts, wire.Author, wire.Content)
 }
 
 func NewModel(cfg Config) *Model {
 	ti := textinput.New()
 	ti.Placeholder = "Type a message..."
+	ti.CharLimit = limits.MaxMessageLength
 	ti.Focus()
 
 	createInput := textinput.New()
 	createInput.Placeholder = "Enter room name..."
+	createInput.CharLimit = limits.MaxRoomNameLength
 	createInput.Width = 30
 
 	return &Model{
@@ -253,13 +266,40 @@ func (m *Model) listenForMessages() tea.Cmd {
 
 		var wire wireMessage
 		if err := json.Unmarshal(data, &wire); err == nil {
-			if wire.Type == "typing" {
+			if wire.Type == hub.MessageTypeTyping.String() {
 				return typingMsg(wire.Author)
 			}
 			return incomingMsg{formatted: formatWireMessage(data), author: wire.Author}
 		}
 
 		return incomingMsg{formatted: string(data)}
+	}
+}
+
+func (m *Model) shouldSendTyping() bool {
+	if m.focus != focusInput {
+		return false
+	}
+	if m.conn == nil {
+		return false
+	}
+	if time.Since(m.lastTypingSent) <= 2*time.Second {
+		return false
+	}
+	return m.input.Value() != ""
+}
+
+func sendTypingCmd(conn *websocket.Conn) tea.Cmd {
+	return func() tea.Msg {
+		msg := &hub.WireMessage{Type: hub.MessageTypeTyping}
+		data, err := msg.Marshal()
+		if err != nil {
+			return errMsg(err)
+		}
+		if err := conn.Write(context.Background(), websocket.MessageText, data); err != nil {
+			return errMsg(err)
+		}
+		return nil
 	}
 }
 
@@ -452,12 +492,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		default:
 			// Send a typing event when the user is actively typing in the input
 			// box. Debounced to at most once every 2 seconds.
-			if m.focus == focusInput && m.conn != nil &&
-				time.Since(m.lastTypingSent) > 2*time.Second &&
-				m.input.Value() != "" {
-				typingJSON := []byte(`{"type":"typing"}`)
-				_ = m.conn.Write(context.Background(), websocket.MessageText, typingJSON)
+			if m.shouldSendTyping() {
 				m.lastTypingSent = time.Now()
+				return m, sendTypingCmd(m.conn)
 			}
 		}
 
@@ -651,7 +688,7 @@ func (m Model) renderMain() string {
 		lipgloss.Left,
 		header,
 		viewportStyle.Render(m.viewport.View()),
-		typingStyle.Render(m.typingLine()),
+		m.renderStatusLine(typingStyle),
 		inputStyle.Render(m.input.View()),
 	)
 }
@@ -720,6 +757,39 @@ func (m Model) typingLine() string {
 	default:
 		return "Several people are typing..."
 	}
+}
+
+func (m Model) charCountIndicator() string {
+	if m.focus != focusInput {
+		return ""
+	}
+	count := len([]rune(m.input.Value()))
+	if count == 0 {
+		return ""
+	}
+	remaining := limits.MaxMessageLength - count
+	text := fmt.Sprintf("%d/%d", count, limits.MaxMessageLength)
+	switch {
+	case remaining < 10:
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("196")).Render(text)
+	case remaining < 50:
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("220")).Render(text)
+	default:
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Render(text)
+	}
+}
+
+func (m Model) renderStatusLine(typingStyle lipgloss.Style) string {
+	typingText := typingStyle.Render(m.typingLine())
+	counter := m.charCountIndicator()
+	if counter == "" {
+		return typingText
+	}
+	gap := m.viewport.Width - lipgloss.Width(typingText) - lipgloss.Width(counter)
+	if gap < 1 {
+		gap = 1
+	}
+	return typingText + strings.Repeat(" ", gap) + counter
 }
 
 func (m Model) renderHelp() string {

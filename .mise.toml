@@ -4,6 +4,8 @@ DEBUG = 0
 
 [tools]
 "npm:wscat" = "latest"
+go = "latest"
+golangci-lint = "latest"
 
 [tasks.build]
 run = "go build -o ./bin/chatatui ."

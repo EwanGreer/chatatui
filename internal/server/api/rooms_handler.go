@@ -2,8 +2,10 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
+	"github.com/EwanGreer/chatatui/internal/limits"
 	"github.com/EwanGreer/chatatui/internal/repository"
 )
 
@@ -39,6 +41,11 @@ func (h *RoomsHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	if req.Name == "" {
 		writeError(w, http.StatusBadRequest, "NAME_REQUIRED", "room name is required")
+		return
+	}
+
+	if len(req.Name) > limits.MaxRoomNameLength {
+		writeError(w, http.StatusBadRequest, "NAME_TOO_LONG", fmt.Sprintf("room name must be %d characters or fewer", limits.MaxRoomNameLength))
 		return
 	}
 
