@@ -9,17 +9,19 @@ import (
 )
 
 type ChatServer struct {
-	handler *api.Handler
-	srv     *http.Server
-	addr    string
-	db      *repository.PostgresDB
+	handler    *api.Handler
+	srv        *http.Server
+	addr       string
+	db         *repository.PostgresDB
+	onShutdown func()
 }
 
-func NewChatServer(h *api.Handler, addr string, db *repository.PostgresDB) *ChatServer {
+func NewChatServer(h *api.Handler, addr string, db *repository.PostgresDB, onShutdown func()) *ChatServer {
 	return &ChatServer{
-		handler: h,
-		addr:    addr,
-		db:      db,
+		handler:    h,
+		addr:       addr,
+		db:         db,
+		onShutdown: onShutdown,
 	}
 }
 
@@ -33,8 +35,8 @@ func (cs *ChatServer) Start() error {
 }
 
 func (cs *ChatServer) Stop(ctx context.Context) error {
-	if cs.handler != nil && cs.handler.Hub != nil {
-		cs.handler.Hub.Shutdown()
+	if cs.onShutdown != nil {
+		cs.onShutdown()
 	}
 
 	if cs.srv != nil {

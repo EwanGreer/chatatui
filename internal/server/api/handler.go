@@ -19,9 +19,13 @@ type ChatService interface {
 	PersistMessage(content []byte, senderID, roomID uuid.UUID) (uuid.UUID, time.Time, error)
 }
 
+type RoomHub interface {
+	GetOrCreateRoom(uuid.UUID) (*hub.Room, error)
+	ActiveCount() int
+}
+
 type Handler struct {
 	Router          chi.Router
-	Hub             *hub.Hub
 	ChatService     ChatService
 	Config          config.ServerConfig
 	RateLimiter     *middleware.RateLimiter
@@ -31,16 +35,15 @@ type Handler struct {
 	roomsHandler    *RoomsHandler
 }
 
-func NewHandler(h *hub.Hub, users middleware.UserLookup, userStore UserStore, roomStore RoomStore, svc ChatService, cfg config.ServerConfig, rl *middleware.RateLimiter) *Handler {
+func NewHandler(h RoomHub, users middleware.UserLookup, userStore UserStore, roomStore RoomStore, svc ChatService, cfg config.ServerConfig, rl *middleware.RateLimiter) *Handler {
 	r := chi.NewRouter()
 	r.Use(chimw.Logger)
 	r.Use(chimw.Recoverer)
 	r.Use(chimw.Heartbeat("/up"))
 
 	return &Handler{
-		Router:          r,
-		Hub:             h,
-		ChatService:     svc,
+		Router:      r,
+		ChatService: svc,
 		Config:          cfg,
 		RateLimiter:     rl,
 		userLookup:      users,

@@ -15,12 +15,12 @@ import (
 )
 
 type WSHandler struct {
-	hub                 *hub.Hub
+	hub                 RoomHub
 	svc                 ChatService
 	messageHistoryLimit int
 }
 
-func NewWSHandler(h *hub.Hub, svc ChatService, messageHistoryLimit int) *WSHandler {
+func NewWSHandler(h RoomHub, svc ChatService, messageHistoryLimit int) *WSHandler {
 	go func() {
 		for {
 			time.Sleep(time.Second * 5)
