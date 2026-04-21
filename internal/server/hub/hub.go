@@ -26,7 +26,7 @@ func NewHub(broker Broker) *Hub {
 	}
 }
 
-func (h *Hub) GetOrCreateRoom(roomUUID uuid.UUID) (*Room, error) {
+func (h *Hub) CreateRoom(roomUUID uuid.UUID) (*Room, error) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
@@ -56,10 +56,6 @@ func (h *Hub) GetOrCreateRoom(roomUUID uuid.UUID) (*Room, error) {
 	}
 
 	return room, nil
-}
-
-func (h *Hub) CreateRoom(roomUUID uuid.UUID) (*Room, error) {
-	return h.GetOrCreateRoom(roomUUID)
 }
 
 func (h *Hub) GetRoom(roomUUID uuid.UUID) (*Room, error) {
