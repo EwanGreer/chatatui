@@ -10,7 +10,7 @@ import (
 var ErrRoomNotFound = errors.New("room not found")
 
 type Hub struct {
-	Rooms map[uuid.UUID]*Room
+	Rooms map[uuid.UUID]*Room // TODO: this should be redis
 	mu    sync.RWMutex
 }
 

@@ -343,8 +343,8 @@ func TestMessageRepository_GetByRoom_IsolatedByRoom(t *testing.T) {
 	r2 := createRoom(t, "room2")
 	repo := NewMessageRepository(testDB)
 
-	repo.Create(&Message{Content: []byte("in r1"), SenderID: u.ID, RoomID: r1.ID})
-	repo.Create(&Message{Content: []byte("in r2"), SenderID: u.ID, RoomID: r2.ID})
+	_ = repo.Create(&Message{Content: []byte("in r1"), SenderID: u.ID, RoomID: r1.ID})
+	_ = repo.Create(&Message{Content: []byte("in r2"), SenderID: u.ID, RoomID: r2.ID})
 
 	msgs, _ := repo.GetByRoom(r1.ID, 10, 0)
 	if len(msgs) != 1 || string(msgs[0].Content) != "in r1" {
