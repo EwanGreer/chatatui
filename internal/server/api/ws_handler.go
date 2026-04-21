@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/coder/websocket"
 	"github.com/EwanGreer/chatatui/internal/middleware"
 	"github.com/EwanGreer/chatatui/internal/server/hub"
+	"github.com/coder/websocket"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -65,10 +65,18 @@ func (h *WSHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	}
 	defer func() { _ = conn.CloseNow() }()
 
-	room, err := h.hub.GetOrCreateRoom(roomUUID)
+	room, err := h.hub.GetRoom(roomUUID)
 	if err != nil {
-		_ = conn.Close(websocket.StatusInternalError, "failed to join room")
-		return
+		if !errors.Is(err, hub.ErrRoomNotFound) {
+			_ = conn.Close(websocket.StatusInternalError, "failed to join room")
+			return
+		}
+
+		room, err = h.hub.CreateRoom(roomUUID)
+		if err != nil {
+			_ = conn.Close(websocket.StatusInternalError, "failed to join room")
+			return
+		}
 	}
 
 	user := middleware.UserFromContext(r.Context())

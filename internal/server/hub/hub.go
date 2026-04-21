@@ -1,10 +1,13 @@
 package hub
 
 import (
+	"errors"
 	"sync"
 
 	"github.com/google/uuid"
 )
+
+var ErrRoomNotFound = errors.New("room not found")
 
 type Hub struct {
 	Rooms map[uuid.UUID]*Room
@@ -17,18 +20,26 @@ func NewHub() *Hub {
 	}
 }
 
-func (h *Hub) GetOrCreateRoom(roomUUID uuid.UUID) (*Room, error) {
+func (h *Hub) CreateRoom(roomUUID uuid.UUID) (*Room, error) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-
-	if room, ok := h.Rooms[roomUUID]; ok {
-		return room, nil
-	}
 
 	room := NewRoom()
 	room.ID = roomUUID
 
 	h.Rooms[roomUUID] = room
+
+	return room, nil
+}
+
+func (h *Hub) GetRoom(roomUUID uuid.UUID) (*Room, error) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	room, ok := h.Rooms[roomUUID]
+	if !ok {
+		return nil, ErrRoomNotFound
+	}
 
 	return room, nil
 }
