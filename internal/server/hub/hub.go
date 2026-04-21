@@ -67,7 +67,7 @@ func (h *Hub) CreateRoom(roomUUID uuid.UUID) (*Room, error) {
 	return room, nil
 }
 
-func (h *Hub) EnsureActive(roomUUID uuid.UUID) (*Room, error) {
+func (h *Hub) GetOrCreateRoom(roomUUID uuid.UUID) (*Room, error) {
 	if room, err := h.GetRoom(roomUUID); err == nil {
 		return room, nil
 	}

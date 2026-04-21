@@ -65,7 +65,7 @@ func (h *WSHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	}
 	defer func() { _ = conn.CloseNow() }()
 
-	room, err := h.hub.EnsureActive(roomUUID)
+	room, err := h.hub.GetOrCreateRoom(roomUUID)
 	if err != nil {
 		_ = conn.Close(websocket.StatusInternalError, "failed to join room")
 		return
