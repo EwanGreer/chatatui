@@ -46,18 +46,16 @@ var serveCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		var broker hub.Broker
-		if cfg.RedisURL != "" {
-			opt, err := redis.ParseURL(cfg.RedisURL)
-			if err != nil {
-				slog.Error("invalid redis_url, falling back to local broker", "error", err)
-				broker = hub.NewLocalBroker()
-			} else {
-				broker = hub.NewRedisBroker(redis.NewClient(opt))
-			}
-		} else {
-			broker = hub.NewLocalBroker()
+		if cfg.RedisURL == "" {
+			slog.Error("redis_url is required")
+			os.Exit(1)
 		}
+		opt, err := redis.ParseURL(cfg.RedisURL)
+		if err != nil {
+			slog.Error("invalid redis_url", "error", err)
+			os.Exit(1)
+		}
+		broker := hub.NewRedisBroker(redis.NewClient(opt))
 
 		svc := service.NewChatService(database.Rooms(), database.Messages())
 		handler := api.NewHandler(hub.NewHub(broker), database.Users(), database.Users(), database.Rooms(), svc, cfg, rateLimiter)

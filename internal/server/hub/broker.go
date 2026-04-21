@@ -3,7 +3,6 @@ package hub
 import (
 	"context"
 	"fmt"
-	"sync"
 
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
@@ -58,52 +57,3 @@ func redisChannel(roomID uuid.UUID) string {
 	return "room:" + roomID.String()
 }
 
-// LocalBroker implements Broker using in-process pub/sub. Used for
-// single-instance mode and tests.
-type LocalBroker struct {
-	mu   sync.Mutex
-	subs map[uuid.UUID][]chan []byte
-}
-
-func NewLocalBroker() *LocalBroker {
-	return &LocalBroker{
-		subs: make(map[uuid.UUID][]chan []byte),
-	}
-}
-
-func (b *LocalBroker) Publish(_ context.Context, roomID uuid.UUID, msg []byte) error {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-
-	for _, ch := range b.subs[roomID] {
-		select {
-		case ch <- msg:
-		default:
-		}
-	}
-	return nil
-}
-
-func (b *LocalBroker) Subscribe(_ context.Context, roomID uuid.UUID) (<-chan []byte, func(), error) {
-	ch := make(chan []byte, 64)
-
-	b.mu.Lock()
-	b.subs[roomID] = append(b.subs[roomID], ch)
-	b.mu.Unlock()
-
-	unsubscribe := func() {
-		b.mu.Lock()
-		defer b.mu.Unlock()
-
-		chans := b.subs[roomID]
-		for i, c := range chans {
-			if c == ch {
-				b.subs[roomID] = append(chans[:i], chans[i+1:]...)
-				break
-			}
-		}
-		close(ch)
-	}
-
-	return ch, unsubscribe, nil
-}
