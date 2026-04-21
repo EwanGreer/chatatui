@@ -20,7 +20,7 @@ import (
 // shape, without starting the hub status goroutine.
 func newWSHandlerRouter(svc ChatService) http.Handler {
 	h := &WSHandler{
-		hub:                 hub.NewHub(),
+		hub:                 hub.NewHub(hub.NewLocalBroker()),
 		svc:                 svc,
 		messageHistoryLimit: 50,
 	}
@@ -40,7 +40,7 @@ func TestWSHandler_MissingRoomID(t *testing.T) {
 	svc := mocks.NewMockChatService(t)
 
 	// Register a route without the {roomID} segment so chi sets it to "".
-	h := &WSHandler{hub: hub.NewHub(), svc: svc, messageHistoryLimit: 50}
+	h := &WSHandler{hub: hub.NewHub(hub.NewLocalBroker()), svc: svc, messageHistoryLimit: 50}
 	r := chi.NewRouter()
 	r.Get("/ws/", h.Handle)
 

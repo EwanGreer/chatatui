@@ -17,6 +17,7 @@ import (
 	"github.com/EwanGreer/chatatui/internal/server/api"
 	"github.com/EwanGreer/chatatui/internal/server/hub"
 	"github.com/EwanGreer/chatatui/internal/service"
+	"github.com/redis/go-redis/v9"
 	"github.com/spf13/cobra"
 )
 
@@ -45,8 +46,21 @@ var serveCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
+		var broker hub.Broker
+		if cfg.RedisURL != "" {
+			opt, err := redis.ParseURL(cfg.RedisURL)
+			if err != nil {
+				slog.Error("invalid redis_url, falling back to local broker", "error", err)
+				broker = hub.NewLocalBroker()
+			} else {
+				broker = hub.NewRedisBroker(redis.NewClient(opt))
+			}
+		} else {
+			broker = hub.NewLocalBroker()
+		}
+
 		svc := service.NewChatService(database.Rooms(), database.Messages())
-		handler := api.NewHandler(hub.NewHub(), database.Users(), database.Users(), database.Rooms(), svc, cfg, rateLimiter)
+		handler := api.NewHandler(hub.NewHub(broker), database.Users(), database.Users(), database.Rooms(), svc, cfg, rateLimiter)
 		srv := server.NewChatServer(handler, cfg.Addr, database)
 
 		go func() {
