@@ -3,38 +3,7 @@ package domain
 import (
 	"encoding/json"
 	"time"
-
-	"github.com/google/uuid"
 )
-
-type User struct {
-	ID     uuid.UUID
-	Name   string
-	APIKey string
-}
-
-type Room struct {
-	ID        uuid.UUID
-	Name      string
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	Members   []RoomMember
-}
-
-type RoomMember struct {
-	UserID          uuid.UUID
-	Name            string
-	LastConnectedAt time.Time
-}
-
-type Message struct {
-	ID        uuid.UUID
-	SenderID  uuid.UUID
-	Author    string
-	Content   string
-	RoomID    uuid.UUID
-	CreatedAt time.Time
-}
 
 type WireMessageType string
 
