@@ -101,6 +101,15 @@ func (c *Client) readPump(ctx context.Context, session *Session, persister Messa
 		msgID, createdAt, err := persister.PersistMessage(data, c.UserID, c.RoomID)
 		if err != nil {
 			slog.Error("failed to persist message", "error", err, "room_id", c.RoomID, "user_id", c.UserID)
+			errMsg := &Message{
+				Type:      MessageTypeError,
+				Content:   "could not send message",
+				Timestamp: time.Now(),
+			}
+			if errBytes, err := errMsg.Marshal(); err == nil {
+				c.Send(errBytes)
+			}
+			continue
 		}
 
 		wire := &Message{

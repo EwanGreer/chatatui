@@ -83,6 +83,12 @@ func (m Model) createRoom(name string) tea.Cmd {
 	}
 }
 
+func clearFlashCmd() tea.Cmd {
+	return tea.Tick(4*time.Second, func(time.Time) tea.Msg {
+		return clearFlashMsg{}
+	})
+}
+
 func (m Model) tickCmd() tea.Cmd {
 	return tea.Tick(5*time.Second, func(t time.Time) tea.Msg {
 		return tickMsg(t)
