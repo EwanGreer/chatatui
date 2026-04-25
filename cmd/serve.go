@@ -26,7 +26,15 @@ var serveCmd = &cobra.Command{
 	Short: "Start the server",
 	Long:  `Start the server`,
 	Run: func(cmd *cobra.Command, args []string) {
-		cfg := config.LoadServerConfig()
+		cfg, err := config.LoadServerConfig()
+		if err != nil {
+			slog.Error("failed to load config", "error", err)
+			os.Exit(1)
+		}
+		if err := cfg.Validate(); err != nil {
+			slog.Error("invalid config", "error", err)
+			os.Exit(1)
+		}
 
 		logLevel := slog.LevelInfo
 		debug := os.Getenv("DEBUG")
