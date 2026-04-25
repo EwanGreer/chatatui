@@ -7,7 +7,7 @@ package mocks
 import (
 	"time"
 
-	"github.com/EwanGreer/chatatui/internal/service"
+	"github.com/EwanGreer/chatatui/internal/domain"
 	"github.com/google/uuid"
 	mock "github.com/stretchr/testify/mock"
 )
@@ -97,23 +97,23 @@ func (_c *MockChatService_AddRoomMember_Call) RunAndReturn(run func(roomID uuid.
 }
 
 // GetMessageHistory provides a mock function for the type MockChatService
-func (_mock *MockChatService) GetMessageHistory(roomID uuid.UUID, limit int, offset int) ([]service.MessageInfo, error) {
+func (_mock *MockChatService) GetMessageHistory(roomID uuid.UUID, limit int, offset int) ([]domain.Message, error) {
 	ret := _mock.Called(roomID, limit, offset)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetMessageHistory")
 	}
 
-	var r0 []service.MessageInfo
+	var r0 []domain.Message
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(uuid.UUID, int, int) ([]service.MessageInfo, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(uuid.UUID, int, int) ([]domain.Message, error)); ok {
 		return returnFunc(roomID, limit, offset)
 	}
-	if returnFunc, ok := ret.Get(0).(func(uuid.UUID, int, int) []service.MessageInfo); ok {
+	if returnFunc, ok := ret.Get(0).(func(uuid.UUID, int, int) []domain.Message); ok {
 		r0 = returnFunc(roomID, limit, offset)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]service.MessageInfo)
+			r0 = ret.Get(0).([]domain.Message)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(uuid.UUID, int, int) error); ok {
@@ -160,34 +160,34 @@ func (_c *MockChatService_GetMessageHistory_Call) Run(run func(roomID uuid.UUID,
 	return _c
 }
 
-func (_c *MockChatService_GetMessageHistory_Call) Return(messageInfos []service.MessageInfo, err error) *MockChatService_GetMessageHistory_Call {
-	_c.Call.Return(messageInfos, err)
+func (_c *MockChatService_GetMessageHistory_Call) Return(messages []domain.Message, err error) *MockChatService_GetMessageHistory_Call {
+	_c.Call.Return(messages, err)
 	return _c
 }
 
-func (_c *MockChatService_GetMessageHistory_Call) RunAndReturn(run func(roomID uuid.UUID, limit int, offset int) ([]service.MessageInfo, error)) *MockChatService_GetMessageHistory_Call {
+func (_c *MockChatService_GetMessageHistory_Call) RunAndReturn(run func(roomID uuid.UUID, limit int, offset int) ([]domain.Message, error)) *MockChatService_GetMessageHistory_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetRoom provides a mock function for the type MockChatService
-func (_mock *MockChatService) GetRoom(id uuid.UUID) (*service.RoomInfo, error) {
+func (_mock *MockChatService) GetRoom(id uuid.UUID) (*domain.Room, error) {
 	ret := _mock.Called(id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetRoom")
 	}
 
-	var r0 *service.RoomInfo
+	var r0 *domain.Room
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(uuid.UUID) (*service.RoomInfo, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(uuid.UUID) (*domain.Room, error)); ok {
 		return returnFunc(id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(uuid.UUID) *service.RoomInfo); ok {
+	if returnFunc, ok := ret.Get(0).(func(uuid.UUID) *domain.Room); ok {
 		r0 = returnFunc(id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*service.RoomInfo)
+			r0 = ret.Get(0).(*domain.Room)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(uuid.UUID) error); ok {
@@ -222,12 +222,12 @@ func (_c *MockChatService_GetRoom_Call) Run(run func(id uuid.UUID)) *MockChatSer
 	return _c
 }
 
-func (_c *MockChatService_GetRoom_Call) Return(roomInfo *service.RoomInfo, err error) *MockChatService_GetRoom_Call {
-	_c.Call.Return(roomInfo, err)
+func (_c *MockChatService_GetRoom_Call) Return(room *domain.Room, err error) *MockChatService_GetRoom_Call {
+	_c.Call.Return(room, err)
 	return _c
 }
 
-func (_c *MockChatService_GetRoom_Call) RunAndReturn(run func(id uuid.UUID) (*service.RoomInfo, error)) *MockChatService_GetRoom_Call {
+func (_c *MockChatService_GetRoom_Call) RunAndReturn(run func(id uuid.UUID) (*domain.Room, error)) *MockChatService_GetRoom_Call {
 	_c.Call.Return(run)
 	return _c
 }

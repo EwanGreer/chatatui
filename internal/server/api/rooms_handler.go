@@ -6,17 +6,17 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/EwanGreer/chatatui/internal/domain"
 	"github.com/EwanGreer/chatatui/internal/limits"
-	"github.com/EwanGreer/chatatui/internal/repository"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )
 
 type RoomStore interface {
-	Create(room *repository.Room) error
-	List(limit, offset int) ([]repository.Room, error)
-	GetByID(id uuid.UUID) (*repository.Room, error)
-	ListRoomMembers(roomID uuid.UUID) ([]repository.RoomMember, error)
+	Create(room *domain.Room) error
+	List(limit, offset int) ([]domain.Room, error)
+	GetByID(id uuid.UUID) (*domain.Room, error)
+	ListRoomMembers(roomID uuid.UUID) ([]domain.RoomMember, error)
 }
 
 type RoomsHandler struct {
@@ -64,9 +64,7 @@ func (h *RoomsHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	room := &repository.Room{
-		Name: req.Name,
-	}
+	room := &domain.Room{Name: req.Name}
 
 	if err := h.rooms.Create(room); err != nil {
 		writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "failed to create room")
@@ -103,7 +101,7 @@ func (h *RoomsHandler) Index(w http.ResponseWriter, r *http.Request) {
 		members := make([]RoomMemberResponse, len(room.Members))
 		for j, m := range room.Members {
 			members[j] = RoomMemberResponse{
-				ID:   m.ID.String(),
+				ID:   m.UserID.String(),
 				Name: m.Name,
 			}
 		}
@@ -148,8 +146,8 @@ func (h *RoomsHandler) Show(w http.ResponseWriter, r *http.Request) {
 		}
 
 		members[i] = RoomMemberResponse{
-			ID:              m.User.ID.String(),
-			Name:            m.User.Name,
+			ID:              m.UserID.String(),
+			Name:            m.Name,
 			LastConnectedAt: lastConnectedAt,
 		}
 	}

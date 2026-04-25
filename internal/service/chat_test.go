@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/EwanGreer/chatatui/internal/repository"
+	"github.com/EwanGreer/chatatui/internal/domain"
 	mocks "github.com/EwanGreer/chatatui/internal/service/_mocks"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -18,20 +18,20 @@ func TestChatService_GetRoom(t *testing.T) {
 	roomID := uuid.New()
 
 	tests := []struct {
-		name        string
-		setup       func(*mocks.MockRoomStore)
-		wantRoom    *RoomInfo
-		wantErrIs   error
+		name      string
+		setup     func(*mocks.MockRoomStore)
+		wantRoom  *domain.Room
+		wantErrIs error
 	}{
 		{
-			name: "returns RoomInfo for existing room",
+			name: "returns Room for existing room",
 			setup: func(m *mocks.MockRoomStore) {
-				m.EXPECT().GetByID(roomID).Return(&repository.Room{
-					BaseModel: repository.BaseModel{ID: roomID},
-					Name:      "general",
+				m.EXPECT().GetByID(roomID).Return(&domain.Room{
+					ID:   roomID,
+					Name: "general",
 				}, nil)
 			},
-			wantRoom: &RoomInfo{ID: roomID, Name: "general"},
+			wantRoom: &domain.Room{ID: roomID, Name: "general"},
 		},
 		{
 			name: "propagates not found error",
@@ -119,32 +119,33 @@ func TestChatService_GetMessageHistory(t *testing.T) {
 	now := time.Now().Truncate(time.Second)
 
 	tests := []struct {
-		name     string
-		setup    func(*mocks.MockMessageStore)
-		want     []MessageInfo
-		wantErr  bool
+		name    string
+		setup   func(*mocks.MockMessageStore)
+		want    []domain.Message
+		wantErr bool
 	}{
 		{
-			name: "maps repository messages to MessageInfo",
+			name: "returns domain messages from store",
 			setup: func(m *mocks.MockMessageStore) {
-				m.EXPECT().GetByRoom(roomID, 50, 0).Return([]repository.Message{
+				m.EXPECT().GetByRoom(roomID, 50, 0).Return([]domain.Message{
 					{
-						BaseModel: repository.BaseModel{ID: msgID, CreatedAt: now},
-						Content:   []byte("hello"),
-						Sender:    repository.User{Name: "alice"},
+						ID:        msgID,
+						Author:    "alice",
+						Content:   "hello",
+						CreatedAt: now,
 					},
 				}, nil)
 			},
-			want: []MessageInfo{
+			want: []domain.Message{
 				{ID: msgID, Author: "alice", Content: "hello", CreatedAt: now},
 			},
 		},
 		{
 			name: "returns empty slice when no messages",
 			setup: func(m *mocks.MockMessageStore) {
-				m.EXPECT().GetByRoom(roomID, 50, 0).Return([]repository.Message{}, nil)
+				m.EXPECT().GetByRoom(roomID, 50, 0).Return([]domain.Message{}, nil)
 			},
-			want: []MessageInfo{},
+			want: []domain.Message{},
 		},
 		{
 			name: "propagates store error",
@@ -188,7 +189,7 @@ func TestChatService_PersistMessage(t *testing.T) {
 		{
 			name: "persists message and returns ID and timestamp",
 			setup: func(m *mocks.MockMessageStore) {
-				m.EXPECT().Create(mockAny).RunAndReturn(func(msg *repository.Message) error {
+				m.EXPECT().Create(mockAny).RunAndReturn(func(msg *domain.Message) error {
 					msg.ID = uuid.New()
 					msg.CreatedAt = time.Now()
 					return nil
@@ -228,4 +229,4 @@ func TestChatService_PersistMessage(t *testing.T) {
 }
 
 // mockAny matches any argument — used where the exact value is set inside the function.
-var mockAny = mock.MatchedBy(func(_ *repository.Message) bool { return true })
+var mockAny = mock.MatchedBy(func(_ *domain.Message) bool { return true })

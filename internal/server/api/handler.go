@@ -4,18 +4,18 @@ import (
 	"time"
 
 	"github.com/EwanGreer/chatatui/internal/config"
+	"github.com/EwanGreer/chatatui/internal/domain"
 	"github.com/EwanGreer/chatatui/internal/middleware"
 	"github.com/EwanGreer/chatatui/internal/server/hub"
-	"github.com/EwanGreer/chatatui/internal/service"
 	"github.com/go-chi/chi/v5"
 	chimw "github.com/go-chi/chi/v5/middleware"
 	"github.com/google/uuid"
 )
 
 type ChatService interface {
-	GetRoom(id uuid.UUID) (*service.RoomInfo, error)
+	GetRoom(id uuid.UUID) (*domain.Room, error)
 	AddRoomMember(roomID, userID uuid.UUID) error
-	GetMessageHistory(roomID uuid.UUID, limit, offset int) ([]service.MessageInfo, error)
+	GetMessageHistory(roomID uuid.UUID, limit, offset int) ([]domain.Message, error)
 	PersistMessage(content []byte, senderID, roomID uuid.UUID) (uuid.UUID, time.Time, error)
 }
 
