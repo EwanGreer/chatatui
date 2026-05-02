@@ -37,6 +37,10 @@ func (m Model) View() string {
 		view = m.renderCreateRoomModal()
 	}
 
+	if m.focus == focusUserInfo {
+		view = m.renderUserInfoModal()
+	}
+
 	return view
 }
 
@@ -68,9 +72,7 @@ func (m Model) renderSidebar() string {
 		roomList += name + "\n"
 	}
 
-	if m.err != nil {
-		roomList = styleError.Render("Error: " + m.err.Error())
-	} else if len(m.rooms) == 0 {
+	if len(m.rooms) == 0 {
 		roomList = styleMuted.Render("(no rooms)")
 	}
 
@@ -168,6 +170,53 @@ func (m Model) renderCreateRoomModal() string {
 	)
 }
 
+func (m Model) renderUserInfoModal() string {
+	modalStyle := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(colorFocus).
+		Padding(1, 2).
+		Width(40).
+		Background(colorModalBg)
+
+	name := m.username
+	if name == "" {
+		name = styleMuted.Render("(loading...)")
+	}
+
+	server := m.config.ServerAddr
+
+	var connStatus string
+	switch m.state {
+	case connStateConnected:
+		connStatus = styleStateConnected.Render("Connected")
+	case connStateConnecting:
+		connStatus = styleStateConnecting.Render("Connecting...")
+	case connStateDisconnected:
+		connStatus = styleStateDisconnected.Render("Disconnected")
+	}
+
+	content := lipgloss.JoinVertical(
+		lipgloss.Left,
+		styleModalTitle.Render("User Info"),
+		"",
+		styleBold.Render("Name:   ")+name,
+		styleBold.Render("Server: ")+server,
+		styleBold.Render("Status: ")+connStatus,
+		"",
+		styleModalHelp.Render("Press Esc to close"),
+	)
+
+	modal := modalStyle.Render(content)
+
+	return lipgloss.Place(
+		m.width,
+		m.height,
+		lipgloss.Center,
+		lipgloss.Center,
+		modal,
+	)
+}
+
 func (m Model) typingLine() string {
 	var typers []string
 	now := time.Now()
@@ -211,6 +260,12 @@ func (m Model) charCountIndicator() string {
 }
 
 func (m Model) renderStatusLine() string {
+	if m.flash != "" {
+		return styleError.Render("  ✕ " + m.flash)
+	}
+	if m.sending {
+		return styleMuted.Render("  Sending...")
+	}
 	typingText := styleTyping.Render(m.typingLine())
 	counter := m.charCountIndicator()
 	if counter == "" {
@@ -228,6 +283,7 @@ func (m Model) renderHelp() string {
 		{"tab/←/→", "switch panel"},
 		{"j/k", "navigate"},
 		{"n", "new room"},
+		{"u", "user info"},
 		{"r", "refresh"},
 		{"enter", "join/send"},
 		{"q/ctrl+c", "quit"},

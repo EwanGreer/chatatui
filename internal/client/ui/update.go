@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"fmt"
 	"sort"
 	"time"
 
@@ -65,25 +64,29 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.createRoomInput.Reset()
 		return m, m.connectToRoom(msg.ID)
 
+	case meMsg:
+		m.username = string(msg)
+		return m, nil
+
 	case connectedMsg:
 		m.conn = msg.conn
 		m.connectedTo = msg.roomID
 		m.state = connStateConnected
 		m.reconnectDelay = time.Second
-		m.err = nil
 		m.messages = []string{}
 		m.updateViewportContent()
 		return m, m.listenForMessages()
 
 	case incomingMsg:
 		delete(m.typingUsers, msg.author)
+		m.sending = false
 		m.messages = append(m.messages, msg.formatted)
 		m.updateViewportContent()
 		m.viewport.GotoBottom()
 		return m, m.listenForMessages()
 
 	case typingMsg:
-		if author := string(msg); author != "" {
+		if author := string(msg); author != "" && author != m.username {
 			m.typingUsers[author] = time.Now()
 		}
 		return m, m.listenForMessages()
@@ -91,29 +94,32 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case reconnectMsg:
 		return m, m.connectToRoom(string(msg))
 
+	case clearFlashMsg:
+		m.flash = ""
+		return m, nil
+
 	case errMsg:
 		if m.connectedTo != "" {
 			delay := m.reconnectDelay
 			m.reconnectDelay = min(delay*2, 30*time.Second)
 			m.state = connStateConnecting
-			m.err = nil
 			return m, tea.Tick(delay, func(t time.Time) tea.Msg {
 				return reconnectMsg(m.connectedTo)
 			})
 		}
-		m.err = msg
-		return m, nil
+		m.flash = msg.Error()
+		return m, clearFlashCmd()
 
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c":
 			return m, tea.Quit
 		case "q":
-			if m.focus != focusInput && m.focus != focusCreateRoom {
+			if !m.focus.IsTextInput() {
 				return m, tea.Quit
 			}
 		case "tab", "shift+tab":
-			if m.focus != focusCreateRoom {
+			if !m.focus.IsModal() {
 				if m.focus == focusRooms {
 					m.setFocus(focusInput)
 				} else {
@@ -130,7 +136,16 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.setFocus(focusCreateRoom)
 				return m, nil
 			}
+		case "u":
+			if m.focus == focusRooms {
+				m.setFocus(focusUserInfo)
+				return m, nil
+			}
 		case "esc":
+			if m.focus == focusUserInfo {
+				m.setFocus(focusRooms)
+				return m, nil
+			}
 			if m.focus == focusCreateRoom {
 				m.setFocus(focusRooms)
 				m.createRoomInput.Reset()
@@ -140,17 +155,33 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.setFocus(focusRooms)
 				return m, nil
 			}
-		case "left", "[":
-			if m.focus == focusCreateRoom {
+		case "[":
+			if m.focus.CapturesArrows() {
 				return m, nil
 			}
-			if m.focus == focusInput || m.focus == focusMessages {
+			if m.focus == focusMessages {
 				m.setFocus(focusRooms)
 			}
 			return m, nil
-		case "right", "]":
-			if m.focus == focusCreateRoom {
+		case "left":
+			if m.focus.CapturesArrows() {
+				break
+			}
+			if m.focus == focusMessages {
+				m.setFocus(focusRooms)
+			}
+			return m, nil
+		case "]":
+			if m.focus.CapturesArrows() {
 				return m, nil
+			}
+			if m.focus == focusRooms {
+				m.setFocus(focusInput)
+			}
+			return m, nil
+		case "right":
+			if m.focus.CapturesArrows() {
+				break
 			}
 			if m.focus == focusRooms {
 				m.setFocus(focusInput)
@@ -169,9 +200,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.focus == focusInput && m.input.Value() != "" && m.conn != nil {
 				text := m.input.Value()
 				m.input.Reset()
-				m.messages = append(m.messages, fmt.Sprintf("%s You: %s", time.Now().Local().Format("15:04"), text))
-				m.updateViewportContent()
-				m.viewport.GotoBottom()
+				m.sending = true
 				return m, sendMessageCmd(m.conn, text)
 			}
 		case "up", "k":

@@ -8,14 +8,45 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/EwanGreer/chatatui/internal/server/hub"
+	"github.com/EwanGreer/chatatui/internal/domain"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/coder/websocket"
 )
 
 func (m Model) Init() tea.Cmd {
-	return tea.Batch(textinput.Blink, m.fetchRooms(), m.tickCmd())
+	return tea.Batch(textinput.Blink, m.fetchMe(), m.fetchRooms(), m.tickCmd())
+}
+
+func (m Model) fetchMe() tea.Cmd {
+	return func() tea.Msg {
+		url := m.config.httpURL("/me")
+
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			return errMsg(err)
+		}
+		req.Header.Set("Authorization", m.config.APIKey)
+
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return errMsg(err)
+		}
+		defer func() { _ = resp.Body.Close() }()
+
+		if resp.StatusCode != http.StatusOK {
+			return errMsg(fmt.Errorf("server returned %d", resp.StatusCode))
+		}
+
+		var me struct {
+			Name string `json:"name"`
+		}
+		if err := json.NewDecoder(resp.Body).Decode(&me); err != nil {
+			return errMsg(err)
+		}
+
+		return meMsg(me.Name)
+	}
 }
 
 func (m Model) fetchRooms() tea.Cmd {
@@ -83,6 +114,12 @@ func (m Model) createRoom(name string) tea.Cmd {
 	}
 }
 
+func clearFlashCmd() tea.Cmd {
+	return tea.Tick(4*time.Second, func(time.Time) tea.Msg {
+		return clearFlashMsg{}
+	})
+}
+
 func (m Model) tickCmd() tea.Cmd {
 	return tea.Tick(5*time.Second, func(t time.Time) tea.Msg {
 		return tickMsg(t)
@@ -128,7 +165,7 @@ func (m *Model) listenForMessages() tea.Cmd {
 
 		var wire wireMessage
 		if err := json.Unmarshal(data, &wire); err == nil {
-			if wire.Type == hub.MessageTypeTyping.String() {
+			if wire.Type == domain.WireMessageTypeTyping.String() {
 				return typingMsg(wire.Author)
 			}
 			return incomingMsg{formatted: formatWireMessage(data), author: wire.Author}
@@ -149,7 +186,7 @@ func sendMessageCmd(conn *websocket.Conn, text string) tea.Cmd {
 
 func sendTypingCmd(conn *websocket.Conn) tea.Cmd {
 	return func() tea.Msg {
-		msg := &hub.WireMessage{Type: hub.MessageTypeTyping}
+		msg := &domain.WireMessage{Type: domain.WireMessageTypeTyping}
 		data, err := msg.Marshal()
 		if err != nil {
 			return errMsg(err)
