@@ -81,6 +81,7 @@ func initConfig() {
 		viper.SetConfigName(".chatatui")
 	}
 
+	viper.SetEnvPrefix("CHATATUI")
 	viper.AutomaticEnv()
 
 	if err := viper.ReadInConfig(); err != nil {

@@ -19,7 +19,20 @@ const (
 	focusMessages
 	focusInput
 	focusCreateRoom
+	focusUserInfo
 )
+
+func (f focus) IsModal() bool {
+	return f == focusCreateRoom || f == focusUserInfo
+}
+
+func (f focus) IsTextInput() bool {
+	return f == focusInput || f == focusCreateRoom
+}
+
+func (f focus) CapturesArrows() bool {
+	return f == focusCreateRoom || f == focusUserInfo || f == focusInput
+}
 
 type connState int
 
@@ -39,8 +52,13 @@ type Config struct {
 	APIKey     string
 }
 
+type apiClient interface {
+	do(method, path string, reqBody, dst any, wantStatus int) error
+}
+
 type Model struct {
 	config          Config
+	api             apiClient
 	viewport        viewport.Model
 	input           textinput.Model
 	createRoomInput textinput.Model
@@ -51,19 +69,22 @@ type Model struct {
 	height          int
 	ready           bool
 	roomIndex       int
-	err             error
+	flash           string
 	conn            *websocket.Conn
 	connectedTo     string
 	state           connState
 	reconnectDelay  time.Duration
 	typingUsers     map[string]time.Time
 	lastTypingSent  time.Time
+	sending         bool
+	username        string
 }
 
 type (
-	roomsMsg     []Room
-	errMsg       error
-	connectedMsg struct {
+	roomsMsg       []Room
+	errMsg         error
+	clearFlashMsg  struct{}
+	connectedMsg   struct {
 		roomID string
 		conn   *websocket.Conn
 	}
@@ -77,6 +98,7 @@ type incomingMsg struct {
 	author    string
 }
 
+type meMsg     string // current user's username from server
 type typingMsg string // username of the person who is typing
 
 type wireMessage struct {
@@ -100,6 +122,7 @@ func NewModel(cfg Config) *Model {
 
 	return &Model{
 		config:          cfg,
+		api:             newAPIClient(cfg),
 		input:           ti,
 		createRoomInput: createInput,
 		rooms:           []Room{},
