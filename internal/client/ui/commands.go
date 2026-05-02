@@ -1,10 +1,8 @@
 package ui
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -20,96 +18,32 @@ func (m Model) Init() tea.Cmd {
 
 func (m Model) fetchMe() tea.Cmd {
 	return func() tea.Msg {
-		url := m.config.httpURL("/me")
-
-		req, err := http.NewRequest("GET", url, nil)
-		if err != nil {
-			return errMsg(err)
-		}
-		req.Header.Set("Authorization", m.config.APIKey)
-
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			return errMsg(err)
-		}
-		defer func() { _ = resp.Body.Close() }()
-
-		if resp.StatusCode != http.StatusOK {
-			return errMsg(fmt.Errorf("server returned %d", resp.StatusCode))
-		}
-
 		var me struct {
 			Name string `json:"name"`
 		}
-		if err := json.NewDecoder(resp.Body).Decode(&me); err != nil {
+		if err := m.api.do("GET", "/me", nil, &me, http.StatusOK); err != nil {
 			return errMsg(err)
 		}
-
 		return meMsg(me.Name)
 	}
 }
 
 func (m Model) fetchRooms() tea.Cmd {
 	return func() tea.Msg {
-		url := m.config.httpURL("/rooms")
-
-		req, err := http.NewRequest("GET", url, nil)
-		if err != nil {
-			return errMsg(err)
-		}
-		req.Header.Set("Authorization", m.config.APIKey)
-
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			return errMsg(err)
-		}
-		defer func() { _ = resp.Body.Close() }()
-
-		if resp.StatusCode != http.StatusOK {
-			return errMsg(fmt.Errorf("server returned %d", resp.StatusCode))
-		}
-
 		var rooms []Room
-		if err := json.NewDecoder(resp.Body).Decode(&rooms); err != nil {
+		if err := m.api.do("GET", "/rooms", nil, &rooms, http.StatusOK); err != nil {
 			return errMsg(err)
 		}
-
 		return roomsMsg(rooms)
 	}
 }
 
 func (m Model) createRoom(name string) tea.Cmd {
 	return func() tea.Msg {
-		url := m.config.httpURL("/rooms")
-
-		payload := map[string]string{"name": name}
-		body, err := json.Marshal(payload)
-		if err != nil {
-			return errMsg(err)
-		}
-
-		req, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
-		if err != nil {
-			return errMsg(err)
-		}
-		req.Header.Set("Authorization", m.config.APIKey)
-		req.Header.Set("Content-Type", "application/json")
-
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			return errMsg(err)
-		}
-		defer func() { _ = resp.Body.Close() }()
-
-		if resp.StatusCode != http.StatusCreated {
-			return errMsg(fmt.Errorf("server returned %d", resp.StatusCode))
-		}
-
 		var room Room
-		if err := json.NewDecoder(resp.Body).Decode(&room); err != nil {
+		if err := m.api.do("POST", "/rooms", map[string]string{"name": name}, &room, http.StatusCreated); err != nil {
 			return errMsg(err)
 		}
-
 		return roomCreatedMsg(room)
 	}
 }

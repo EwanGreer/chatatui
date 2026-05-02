@@ -1,9 +1,6 @@
 package domain
 
-import (
-	"fmt"
-	"strings"
-)
+import "strings"
 
 type FederatedRoom struct {
 	RoomName, Domain string
@@ -11,20 +8,13 @@ type FederatedRoom struct {
 
 func ParseFederatedRoom(s string) (FederatedRoom, error) {
 	s = strings.TrimSpace(s)
-	roomName, domain, found := strings.Cut(s, "@")
-	switch {
-	case !found:
-		return FederatedRoom{}, fmt.Errorf("invalid federated room %q: missing @", s)
-	case roomName == "":
-		return FederatedRoom{}, fmt.Errorf("invalid federated room %q: empty room name", s)
-	case domain == "":
-		return FederatedRoom{}, fmt.Errorf("invalid federated room %q: empty domain", s)
-	case strings.Contains(domain, "@"):
-		return FederatedRoom{}, fmt.Errorf("invalid federated room %q: multiple @ signs", s)
+	roomName, domain, err := parseAtParts(s, "federated room", "room name")
+	if err != nil {
+		return FederatedRoom{}, err
 	}
 	return FederatedRoom{RoomName: roomName, Domain: domain}, nil
 }
 
 func (f FederatedRoom) String() string {
-	return fmt.Sprintf("%s@%s", f.RoomName, f.Domain)
+	return f.RoomName + "@" + f.Domain
 }

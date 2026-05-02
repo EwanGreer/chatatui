@@ -1,9 +1,7 @@
 package inspect
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
@@ -209,9 +207,9 @@ func formatStringValue(val string) string {
 
 	trimmed := strings.TrimSpace(val)
 	if len(trimmed) > 0 && (trimmed[0] == '{' || trimmed[0] == '[') {
-		var pretty bytes.Buffer
-		if err := json.Indent(&pretty, []byte(trimmed), "", "  "); err == nil {
-			return pretty.String()
+		var buf strings.Builder
+		if err := indentJSON(&buf, trimmed); err == nil {
+			return buf.String()
 		}
 	}
 	return val

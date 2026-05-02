@@ -277,32 +277,25 @@ func (m *Model) updateFilter(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-func (m *Model) applyFilter() {
-	query := strings.ToLower(m.filter.Value())
+func filterStrings(all []string, query string) []string {
 	if query == "" {
-		m.filtered = m.keys
-		return
+		return all
 	}
-	m.filtered = m.filtered[:0]
-	for _, k := range m.keys {
-		if strings.Contains(strings.ToLower(k), query) {
-			m.filtered = append(m.filtered, k)
+	out := make([]string, 0, len(all))
+	for _, s := range all {
+		if strings.Contains(strings.ToLower(s), query) {
+			out = append(out, s)
 		}
 	}
+	return out
+}
+
+func (m *Model) applyFilter() {
+	m.filtered = filterStrings(m.keys, strings.ToLower(m.filter.Value()))
 }
 
 func (m *Model) applyChanFilter() {
-	query := strings.ToLower(m.filter.Value())
-	if query == "" {
-		m.chanFiltered = m.channels
-		return
-	}
-	m.chanFiltered = m.chanFiltered[:0]
-	for _, ch := range m.channels {
-		if strings.Contains(strings.ToLower(ch), query) {
-			m.chanFiltered = append(m.chanFiltered, ch)
-		}
-	}
+	m.chanFiltered = filterStrings(m.channels, strings.ToLower(m.filter.Value()))
 }
 
 func (m *Model) loadSelected() tea.Cmd {

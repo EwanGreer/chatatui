@@ -52,8 +52,13 @@ type Config struct {
 	APIKey     string
 }
 
+type apiClient interface {
+	do(method, path string, reqBody, dst any, wantStatus int) error
+}
+
 type Model struct {
 	config          Config
+	api             apiClient
 	viewport        viewport.Model
 	input           textinput.Model
 	createRoomInput textinput.Model
@@ -117,6 +122,7 @@ func NewModel(cfg Config) *Model {
 
 	return &Model{
 		config:          cfg,
+		api:             newAPIClient(cfg),
 		input:           ti,
 		createRoomInput: createInput,
 		rooms:           []Room{},
