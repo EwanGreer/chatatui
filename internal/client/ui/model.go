@@ -19,6 +19,7 @@ const (
 	focusMessages
 	focusInput
 	focusCreateRoom
+	focusUserInfo
 )
 
 type connState int
@@ -58,6 +59,8 @@ type Model struct {
 	reconnectDelay  time.Duration
 	typingUsers     map[string]time.Time
 	lastTypingSent  time.Time
+	sending         bool
+	username        string
 }
 
 type (
@@ -78,6 +81,7 @@ type incomingMsg struct {
 	author    string
 }
 
+type meMsg     string // current user's username from server
 type typingMsg string // username of the person who is typing
 
 type wireMessage struct {

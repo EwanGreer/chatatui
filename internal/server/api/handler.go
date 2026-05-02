@@ -30,6 +30,7 @@ type Handler struct {
 	wsHandler       *WSHandler
 	registerHandler *RegisterHandler
 	roomsHandler    *RoomsHandler
+	meHandler       *MeHandler
 }
 
 func NewHandler(h RoomHub, users middleware.UserLookup, userStore UserStore, roomStore RoomStore, svc ChatService, cfg config.ServerConfig, rl *middleware.RateLimiter) *Handler {
@@ -48,6 +49,7 @@ func NewHandler(h RoomHub, users middleware.UserLookup, userStore UserStore, roo
 		wsHandler:       NewWSHandler(h, svc),
 		registerHandler: NewRegisterHandler(userStore),
 		roomsHandler:    NewRoomsHandler(roomStore, cfg.RoomListLimit),
+		meHandler:       NewMeHandler(),
 	}
 }
 
@@ -60,6 +62,7 @@ func (h *Handler) Routes() chi.Router {
 			h.RateLimiter.Middleware,
 		)
 
+		r.Get("/me", h.meHandler.Handle)
 		r.Get("/rooms", h.roomsHandler.Index)
 		r.Post("/rooms", h.roomsHandler.Create)
 		r.Get("/rooms/{id}", h.roomsHandler.Show)
