@@ -22,6 +22,18 @@ const (
 	focusUserInfo
 )
 
+func (f focus) IsModal() bool {
+	return f == focusCreateRoom || f == focusUserInfo
+}
+
+func (f focus) IsTextInput() bool {
+	return f == focusInput || f == focusCreateRoom
+}
+
+func (f focus) CapturesArrows() bool {
+	return f == focusCreateRoom || f == focusUserInfo || f == focusInput
+}
+
 type connState int
 
 const (

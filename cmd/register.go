@@ -19,6 +19,7 @@ var registerCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		name := args[0]
+		noSave, _ := cmd.Flags().GetBool("no-save")
 
 		if viper.ConfigFileUsed() == "" {
 			fmt.Fprintln(os.Stderr, "error: no config file found — run 'chatatui init' first")
@@ -54,6 +55,12 @@ var registerCmd = &cobra.Command{
 		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 			fmt.Fprintf(os.Stderr, "error: failed to parse response: %v\n", err)
 			os.Exit(1)
+		}
+
+		if noSave {
+			fmt.Printf("registered as %q\n", name)
+			fmt.Printf("export CHATATUI_API_KEY=%s\n", result.APIKey)
+			return
 		}
 
 		if err := saveAPIKey(result.APIKey); err != nil {
@@ -102,5 +109,6 @@ func saveAPIKey(apiKey string) error {
 }
 
 func init() {
+	registerCmd.Flags().Bool("no-save", false, "print the API key as an export statement instead of saving to config")
 	rootCmd.AddCommand(registerCmd)
 }

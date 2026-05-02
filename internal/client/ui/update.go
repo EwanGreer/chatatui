@@ -115,11 +115,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c":
 			return m, tea.Quit
 		case "q":
-			if m.focus != focusInput && m.focus != focusCreateRoom {
+			if !m.focus.IsTextInput() {
 				return m, tea.Quit
 			}
 		case "tab", "shift+tab":
-			if m.focus != focusCreateRoom && m.focus != focusUserInfo {
+			if !m.focus.IsModal() {
 				if m.focus == focusRooms {
 					m.setFocus(focusInput)
 				} else {
@@ -156,7 +156,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 		case "[":
-			if m.focus == focusCreateRoom || m.focus == focusUserInfo || m.focus == focusInput {
+			if m.focus.CapturesArrows() {
 				return m, nil
 			}
 			if m.focus == focusMessages {
@@ -164,7 +164,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 		case "left":
-			if m.focus == focusCreateRoom || m.focus == focusUserInfo || m.focus == focusInput {
+			if m.focus.CapturesArrows() {
 				break
 			}
 			if m.focus == focusMessages {
@@ -172,7 +172,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 		case "]":
-			if m.focus == focusCreateRoom || m.focus == focusUserInfo || m.focus == focusInput {
+			if m.focus.CapturesArrows() {
 				return m, nil
 			}
 			if m.focus == focusRooms {
@@ -180,7 +180,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 		case "right":
-			if m.focus == focusCreateRoom || m.focus == focusUserInfo || m.focus == focusInput {
+			if m.focus.CapturesArrows() {
 				break
 			}
 			if m.focus == focusRooms {
