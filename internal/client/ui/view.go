@@ -194,16 +194,16 @@ func (m Model) charCountIndicator() string {
 	if m.focus != focusInput {
 		return ""
 	}
-	count := len([]rune(m.input.Value()))
+	count := len(m.input.Value())
 	if count == 0 {
 		return ""
 	}
-	remaining := limits.MaxMessageLength - count
-	text := fmt.Sprintf("%d/%d", count, limits.MaxMessageLength)
+	remaining := max(0, limits.MaxMessageLength-count)
+	text := fmt.Sprintf("%d/%d", remaining, limits.MaxMessageLength)
 	switch {
-	case remaining < 10:
+	case remaining <= 10:
 		return styleError.Render(text)
-	case remaining < 50:
+	case remaining <= 50:
 		return styleWarning.Render(text)
 	default:
 		return styleMuted.Render(text)
