@@ -7,6 +7,8 @@ import (
 
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
+
+	"github.com/EwanGreer/chatatui/internal/limits"
 )
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -168,6 +170,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			if m.focus == focusInput && m.input.Value() != "" && m.conn != nil {
 				text := m.input.Value()
+				if len(text) > limits.MaxMessageLength {
+					return m, nil
+				}
 				m.input.Reset()
 				m.messages = append(m.messages, fmt.Sprintf("%s You: %s", time.Now().Local().Format("15:04"), text))
 				m.updateViewportContent()
